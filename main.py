@@ -2,8 +2,6 @@ import pygame
 from pygame.locals import *
 import const
 
-# teste branch
-
 SCREEN_WIDTH = 400
 SCREEN_HEIGHT = 800
 GRAVITY = 1
