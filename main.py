@@ -1,6 +1,7 @@
 import pygame
 import random
 import const
+import NeuralNetwork
 from pygame.locals import *
 
 SCREEN_WIDTH = 400
@@ -15,6 +16,11 @@ PIPE_WIDTH = 80
 PIPE_HEIGHT = 700 
 
 PIPE_GAP = 150
+
+AMOUNT_HIDDEN = 3
+AMOUNT_NEURON_INPUT = 4
+AMOUNT_NEURON_HIDDEN = 6
+AMOUNT_NEURON_OUTPUT = 1
 
 pipesList = []
 
@@ -37,6 +43,8 @@ class Bird(pygame.sprite.Sprite):
         self.rect[0] = SCREEN_WIDTH / 2
         self.rect[1] = SCREEN_HEIGHT / 2
 
+        self.brain = NeuralNetwork.NeuralNetwork(AMOUNT_HIDDEN, AMOUNT_NEURON_INPUT, AMOUNT_NEURON_HIDDEN, AMOUNT_NEURON_OUTPUT)
+
     def update(self):
         self.currentImage = (self.currentImage + 1) % 3
         self.image = self.images[ self.currentImage ]
@@ -55,6 +63,9 @@ class Bird(pygame.sprite.Sprite):
     def getDistVerticalPipe(self):
         center = (pipesList[0][1].rect[1] + 700) + PIPE_GAP/2
         return self.rect[1] - center
+
+    def getInputs(self):
+        return [self.getDistHorizontalPipe(), self.getDistVerticalPipe(), GAME_SPEED, PIPE_GAP]
 
 class Pipe(pygame.sprite.Sprite):
 
@@ -139,9 +150,20 @@ def main():
             if event.type == QUIT:
                 pygame.quit()
 
-            if event.type == KEYDOWN:
-                if event.key == K_SPACE:
-                    bird.bump()
+            # if event.type == KEYDOWN:
+            #     if event.key == K_SPACE:
+            #         bird.bump()
+
+        # Executação Rede Neural
+        sensorList = bird.getInputs()
+
+        bird.brain.addNeuronInput(sensorList)
+        bird.brain.calculateOutput()
+        output = bird.brain.getOutput()
+
+        # print(output[0])
+        if output[0] == 0:
+            bird.bump()
 
         screen.blit(BACKGROUND, (0, 0))
 
@@ -177,9 +199,10 @@ def main():
 
         if (pygame.sprite.groupcollide(bird_group, ground_group, False, False, pygame.sprite.collide_mask) or
            pygame.sprite.groupcollide(bird_group, pipe_group, False, False, pygame.sprite.collide_mask)):
-            pygame.quit()
-            quit()
-            break
+           pass
+            # pygame.quit()
+            # quit()
+            # break
 
 
 if __name__ == '__main__':
