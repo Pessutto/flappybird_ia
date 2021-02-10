@@ -25,7 +25,7 @@ class Layer:
   amountNeuron = 0
 
   def __init__(self) -> None:
-      pass
+    pass
 
 class NeuralNetwork: # Cerebro
   inputLayer = None

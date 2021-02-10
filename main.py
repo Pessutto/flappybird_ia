@@ -124,8 +124,22 @@ def getBestBird(birds):
     for bird in birds:
         if bestBird.score < bird.score:
             bestBird = bird
-            
+
     return bestBird
+
+def changeWeights(bird):
+    for n in range(0, AMOUNT_HIDDEN):
+        for k in range(0, AMOUNT_NEURON_HIDDEN):
+            if n == 0:
+                for i in range(0, AMOUNT_NEURON_INPUT):
+                    bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = random.randrange(-1000, 1000)
+            else:
+                for i in range(0, AMOUNT_NEURON_HIDDEN):
+                    bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = random.randrange(-1000, 1000)
+
+    for j in range(0, AMOUNT_NEURON_OUTPUT):
+        for l in range(0, AMOUNT_NEURON_HIDDEN):
+            bird.brain.outputLayer.neuronList[j].weights[l] = random.randrange(-1000, 1000)
 
 def main():
     birds = []
@@ -141,6 +155,7 @@ def main():
         bird = Bird()
         birds.append(bird)
         bird_group.add(bird)
+        changeWeights(bird)
 
     ground_group = pygame.sprite.Group()
     for i in range(2):
@@ -214,21 +229,21 @@ def main():
         # Checa colisões remove do sprite.group e birds, adiciona em birdsCollision
         birdCollisionGround = pygame.sprite.groupcollide(bird_group, ground_group, True, False, pygame.sprite.collide_mask)
         if birdCollisionGround:
-            birdsColl = list(birdCollisionGround.keys())
+            birdsColl = birdCollisionGround.keys()
             for bird in birdsColl:
-                birds.remove(bird)
+                # birds.remove(bird)
                 birdsCollision.append(bird)
         birdCollisionPipe = pygame.sprite.groupcollide(bird_group, pipe_group, True, False, pygame.sprite.collide_mask)
         if birdCollisionPipe:
             birdsColl = birdCollisionPipe.keys()
             for bird in birdsColl:
-                birds.remove(bird)
+                # birds.remove(bird)
                 birdsCollision.append(bird)
 
-        if len(birds) == 0:
-            pygame.quit()
-            quit()
-            break
+        # if len(birds) == 0:
+        #     pygame.quit()
+        #     quit()
+        #     break
 
         for bird in birds:
             bird.score += 1
