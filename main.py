@@ -2,7 +2,9 @@ import pygame
 import random
 import const
 import NeuralNetwork
+import time
 from pygame.locals import *
+from threading import Thread
 
 SCREEN_WIDTH = 400
 SCREEN_HEIGHT = 800
@@ -28,6 +30,8 @@ class Bird(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+
+        self.score = 0
 
         self.images = [pygame.image.load(const.BLUEBIRD_TOP).convert_alpha(),
                        pygame.image.load(const.BLUEBIRD_MID).convert_alpha(),
@@ -115,9 +119,17 @@ def get_random_pipes(xpos):
     pipe_inverted = Pipe(True, xpos, SCREEN_HEIGHT - size - PIPE_GAP)
     return (pipe, pipe_inverted)
 
-
+def getBestBird(birds):
+    bestBird = birds[0]
+    for bird in birds:
+        if bestBird.score < bird.score:
+            bestBird = bird
+            
+    return bestBird
 
 def main():
+    birds = []
+    birdsCollision = []
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -125,8 +137,10 @@ def main():
     BACKGROUND = pygame.transform.scale(BACKGROUND, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
     bird_group = pygame.sprite.Group()
-    bird = Bird()
-    bird_group.add(bird)
+    for n in range(0, 10):
+        bird = Bird()
+        birds.append(bird)
+        bird_group.add(bird)
 
     ground_group = pygame.sprite.Group()
     for i in range(2):
@@ -135,7 +149,7 @@ def main():
 
     pipe_group = pygame.sprite.Group()
 
-    pipes = get_random_pipes(SCREEN_WIDTH * 2)
+    pipes = get_random_pipes(600)
     pipe_group.add(pipes[0])
     pipe_group.add(pipes[1])
 
@@ -143,7 +157,6 @@ def main():
     pipesList.append(listaPipe)
 
     clock = pygame.time.Clock()
-
     while True:
         clock.tick(30)
         for event in pygame.event.get():
@@ -155,15 +168,15 @@ def main():
             #         bird.bump()
 
         # Executação Rede Neural
-        sensorList = bird.getInputs()
+        for bird in birds:
+            sensorList = bird.getInputs()
 
-        bird.brain.addNeuronInput(sensorList)
-        bird.brain.calculateOutput()
-        output = bird.brain.getOutput()
+            bird.brain.addNeuronInput(sensorList)
+            bird.brain.calculateOutput()
+            output = bird.brain.getOutput()
 
-        # print(output[0])
-        if output[0] == 0:
-            bird.bump()
+            if output[0] == 0:
+                bird.bump()
 
         screen.blit(BACKGROUND, (0, 0))
 
@@ -173,7 +186,8 @@ def main():
             new_ground = Ground(GROUND_WIDTH - 20)
             ground_group.add(new_ground)
 
-        # Criar novo Pipe ao passar por eles
+        # Criar novos Pipes quando melhor Bird passar por eles
+        bird = getBestBird(birds)
         if bird.getDistHorizontalPipe() == 0:
             pipes = get_random_pipes(SCREEN_WIDTH + 100)
             pipe_group.add(pipes[0])
@@ -197,12 +211,27 @@ def main():
 
         pygame.display.update()
 
-        if (pygame.sprite.groupcollide(bird_group, ground_group, False, False, pygame.sprite.collide_mask) or
-           pygame.sprite.groupcollide(bird_group, pipe_group, False, False, pygame.sprite.collide_mask)):
-           pass
-            # pygame.quit()
-            # quit()
-            # break
+        # Checa colisões remove do sprite.group e birds, adiciona em birdsCollision
+        birdCollisionGround = pygame.sprite.groupcollide(bird_group, ground_group, True, False, pygame.sprite.collide_mask)
+        if birdCollisionGround:
+            birdsColl = list(birdCollisionGround.keys())
+            for bird in birdsColl:
+                birds.remove(bird)
+                birdsCollision.append(bird)
+        birdCollisionPipe = pygame.sprite.groupcollide(bird_group, pipe_group, True, False, pygame.sprite.collide_mask)
+        if birdCollisionPipe:
+            birdsColl = birdCollisionPipe.keys()
+            for bird in birdsColl:
+                birds.remove(bird)
+                birdsCollision.append(bird)
+
+        if len(birds) == 0:
+            pygame.quit()
+            quit()
+            break
+
+        for bird in birds:
+            bird.score += 1
 
 
 if __name__ == '__main__':

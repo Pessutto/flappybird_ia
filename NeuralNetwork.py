@@ -67,12 +67,9 @@ class NeuralNetwork: # Cerebro
     self.outputLayer.amountNeuron = amountNeuronOutput
 
     self.outputLayer.neuronList = []
-    for i in range(0, amountNeuronInput):
+    for i in range(0, amountNeuronOutput):
       self.outputLayer.neuronList.append(Neuron())
-      self.makeNeuron(self.outputLayer.neuronList[i], amountNeuronOutput)
-
-    for j in range(0, amountNeuronOutput):
-      self.makeNeuron(self.outputLayer.neuronList[j], amountNeuronOutput)
+      self.makeNeuron(self.outputLayer.neuronList[i], amountNeuronHidden)
 
   # RNA_CopiarParaEntrada
   def addNeuronInput(self, imputList):
@@ -173,18 +170,3 @@ class NeuralNetwork: # Cerebro
 
     neuron.error = 0
     neuron.output = 1
-
-
-
-#     Rede->CamadaSaida.QuantidadeNeuronios = QtdNeuroniosSaida;
-#     Rede->CamadaSaida.Neuronios = (Neuronio*)malloc(QtdNeuroniosSaida*sizeof(Neuronio));
-
-#     for(j=0; j < QtdNeuroniosSaida; j++)
-#     {
-#         RNA_CriarNeuronio(&Rede->CamadaSaida.Neuronios[j], QtdNeuroniosEscondida);
-#     }
-
-#     //printf("Criada uma Rede Neural com:\n\n1 Camada de entrada com %d neuronio(s) + 1 BIAS.\n%d Camada(s) escondida(s), cada uma com %d neuronio(s) + 1 BIAS.\n1 Camada de saida com %d neuronio(s).\n", QtdNeuroniosEntrada-1, QuantidadeEscondidas, QtdNeuroniosEscondida-1, QtdNeuroniosSaida);
-
-#     return Rede;
-# }
