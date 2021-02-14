@@ -126,3 +126,4 @@ dmypy.json
 
 # others
 img/python-flappybird-master/
+.vscode/
