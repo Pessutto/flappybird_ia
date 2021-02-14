@@ -1,5 +1,4 @@
 import random as rd
-import json
 
 BIAS = 1
 p_weights = 0
@@ -144,9 +143,3 @@ def modifyWeights(neural, type):
 def addInputs(neural, sensorList):
     for i in range(len(neural["inputLayer"]) - BIAS):
         neural["inputLayer"][i][p_output] = sensorList[i]
-
-
-test = createNeuralNetwork(4, 3, 6, 1)
-# addInputs(test, [1, 2, 3, 4])
-
-writeDictFromJson('weights.json', test)

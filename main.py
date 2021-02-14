@@ -66,7 +66,7 @@ class Game:
 
         pygame.font.init()
         self.fonte = pygame.font.get_default_font()
-        self.fontesys=pygame.font.SysFont(self.fonte, 45)
+        self.fontesys = pygame.font.SysFont(self.fonte, 45)
 
     def newRound(self):
         self.age += 1
@@ -107,6 +107,7 @@ class Game:
         listaPipe = [pipes[0], pipes[1]]
         self.pipesList.append(listaPipe)
 
+
 class Bird(pygame.sprite.Sprite):
 
     def __init__(self):
@@ -127,7 +128,6 @@ class Bird(pygame.sprite.Sprite):
         self.rect[1] = random.randrange(0, SCREEN_HEIGHT)
 
         self.brain = neural.createNeuralNetwork(AMOUNT_NEURON_INPUT, AMOUNT_HIDDEN, AMOUNT_NEURON_HIDDEN, AMOUNT_NEURON_OUTPUT)
-
 
     def update(self):
         self.currentImage = (self.currentImage + 1) % 3
