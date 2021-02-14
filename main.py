@@ -1,9 +1,8 @@
 import pygame
 import random
 import const
-import NeuralNetwork
+import NeuralNetwork as neural
 import json
-import time
 from pygame.locals import *
 from threading import Thread
 
@@ -25,11 +24,6 @@ AMOUNT_NEURON_INPUT = 4
 AMOUNT_NEURON_HIDDEN = 6
 AMOUNT_NEURON_OUTPUT = 1
 
-backupWeights = {
-    "score": 0,
-    "hiddenLayerList": [],
-    "outputLayer": []
-}
 
 class Game:
 
@@ -50,7 +44,6 @@ class Game:
             self.birds.append(bird)
             self.bird_group.add(bird)
             loadWeights(bird)
-            # changeWeights(bird)
 
         self.ground_group = pygame.sprite.Group()
         self.ceiling_group = pygame.sprite.Group()
@@ -83,7 +76,9 @@ class Game:
         self.pipesList.clear()
 
         bird = getBestBird(self.birdsCollision)
-        if bird.score > backupWeights["score"]:
+
+        backupWeights = loadFromJson('weights.json')
+        if bird.brain["score"] > backupWeights["score"]:
             saveWeights(bird)
 
         # Criar 100 novos passaros.
@@ -93,7 +88,7 @@ class Game:
             self.birds.append(bird)
             self.bird_group.add(bird)
             loadWeights(bird)
-            modifyWeights(bird, random.randrange(0, 2))
+            neural.modifyWeights(bird.brain, random.randrange(3))
 
         self.ground_group = pygame.sprite.Group()
         self.ceiling_group = pygame.sprite.Group()
@@ -117,8 +112,6 @@ class Bird(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
-        self.score = 0
-
         self.images = [pygame.image.load(const.BLUEBIRD_TOP).convert_alpha(),
                        pygame.image.load(const.BLUEBIRD_MID).convert_alpha(),
                        pygame.image.load(const.BLUEBIRD_BOT).convert_alpha()]
@@ -133,7 +126,8 @@ class Bird(pygame.sprite.Sprite):
         self.rect[0] = SCREEN_WIDTH / 2
         self.rect[1] = random.randrange(0, SCREEN_HEIGHT)
 
-        self.brain = NeuralNetwork.NeuralNetwork(AMOUNT_HIDDEN, AMOUNT_NEURON_INPUT, AMOUNT_NEURON_HIDDEN, AMOUNT_NEURON_OUTPUT)
+        self.brain = neural.createNeuralNetwork(AMOUNT_NEURON_INPUT, AMOUNT_HIDDEN, AMOUNT_NEURON_HIDDEN, AMOUNT_NEURON_OUTPUT)
+
 
     def update(self):
         self.currentImage = (self.currentImage + 1) % 3
@@ -157,6 +151,7 @@ class Bird(pygame.sprite.Sprite):
     def getInputs(self, game):
         return [self.getDistHorizontalPipe(game), self.getDistVerticalPipe(game), GAME_SPEED, PIPE_GAP]
 
+
 class Pipe(pygame.sprite.Sprite):
 
     def __init__(self, inverted, xpos, ysize):
@@ -179,6 +174,7 @@ class Pipe(pygame.sprite.Sprite):
     def update(self):
         self.rect[0] -= GAME_SPEED
 
+
 class Ground(pygame.sprite.Sprite):
 
     def __init__(self, xPos, yPos):
@@ -196,10 +192,12 @@ class Ground(pygame.sprite.Sprite):
     def update(self):
         self.rect[0] -= GAME_SPEED
 
+
 def is_off_screen(sprite):
     if sprite:
         return sprite.rect[0] < -(sprite.rect[2])
     return False
+
 
 def get_random_pipes(xpos):
     size = random.randint(100, 300)
@@ -207,117 +205,34 @@ def get_random_pipes(xpos):
     pipe_inverted = Pipe(True, xpos, SCREEN_HEIGHT - size - PIPE_GAP)
     return (pipe, pipe_inverted)
 
+
 def getBestBird(birds):
     bestBird = birds[0]
     for bird in birds:
-        if bestBird.score < bird.score:
+        if bestBird.brain["score"] < bird.brain["score"]:
             bestBird = bird
 
     return bestBird
 
-def changeWeights(bird):
-    for n in range(0, AMOUNT_HIDDEN):
-        for k in range(0, AMOUNT_NEURON_HIDDEN):
-            if n == 0:
-                for i in range(0, AMOUNT_NEURON_INPUT):
-                    bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = random.randrange(-1000, 1000)
-            else:
-                for i in range(0, AMOUNT_NEURON_HIDDEN):
-                    bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = random.randrange(-1000, 1000)
-
-    for j in range(0, AMOUNT_NEURON_OUTPUT):
-        for l in range(0, AMOUNT_NEURON_HIDDEN):
-            bird.brain.outputLayer.neuronList[j].weights[l] = random.randrange(-1000, 1000)
 
 def loadWeights(bird):
-    weight = 0
-    for n in range(0, AMOUNT_HIDDEN):
-        for k in range(0, AMOUNT_NEURON_HIDDEN):
-            if n == 0:
-                for i in range(0, AMOUNT_NEURON_INPUT):
-                    bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = backupWeights['hiddenLayerList'][weight]
-                    weight += 1
-            else:
-                for i in range(0, AMOUNT_NEURON_HIDDEN):
-                    bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = backupWeights['hiddenLayerList'][weight]
-                    weight += 1
+    bird.brain = loadFromJson('weights.json')
 
-    weight = 0
-    for j in range(0, AMOUNT_NEURON_OUTPUT):
-        for l in range(0, AMOUNT_NEURON_HIDDEN):
-            bird.brain.outputLayer.neuronList[j].weights[l] = backupWeights["outputLayer"][weight]
-            weight += 1
 
 def saveWeights(bird):
-    backupWeights["score"] = bird.score
-    backupWeights["hiddenLayerList"].clear()
-    backupWeights["outputLayer"].clear()
-    for n in range(0, AMOUNT_HIDDEN):
-        for k in range(0, AMOUNT_NEURON_HIDDEN):
-            if n == 0:
-                for i in range(0, AMOUNT_NEURON_INPUT):
-                    backupWeights["hiddenLayerList"].append(bird.brain.hiddenLayerList[n].neuronList[k].weights[i])
-            else:
-                for i in range(0, AMOUNT_NEURON_HIDDEN):
-                    backupWeights["hiddenLayerList"].append(bird.brain.hiddenLayerList[n].neuronList[k].weights[i])
+    writeDictFromJson('weights.json', bird.brain)
 
-    for j in range(0, AMOUNT_NEURON_OUTPUT):
-        for l in range(0, AMOUNT_NEURON_HIDDEN):
-            backupWeights["outputLayer"].append(bird.brain.outputLayer.neuronList[j].weights[l])
-
-    writeDictFromJson('weights.json', backupWeights)
-
-def modifyWeights(bird, mode):
-    if mode == 0:
-        for n in range(0, AMOUNT_HIDDEN):
-            for k in range(0, AMOUNT_NEURON_HIDDEN):
-                if n == 0:
-                    for i in range(0, AMOUNT_NEURON_INPUT):
-                        bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = bird.brain.hiddenLayerList[n].neuronList[k].weights[i] * (random.randrange(0, 10001) / 10000 + 0.5)
-                else:
-                    for i in range(0, AMOUNT_NEURON_HIDDEN):
-                        bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = bird.brain.hiddenLayerList[n].neuronList[k].weights[i] * (random.randrange(0, 10001) / 10000 + 0.5)
-
-        for j in range(0, AMOUNT_NEURON_OUTPUT):
-            for l in range(0, AMOUNT_NEURON_HIDDEN):
-                bird.brain.outputLayer.neuronList[j].weights[l] = bird.brain.outputLayer.neuronList[j].weights[l] * (random.randrange(0, 10001) / 10000 + 0.5)
-
-    elif mode == 1:
-        for n in range(0, AMOUNT_HIDDEN):
-            for k in range(0, AMOUNT_NEURON_HIDDEN):
-                if n == 0:
-                    for i in range(0, AMOUNT_NEURON_INPUT):
-                        bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = bird.brain.hiddenLayerList[n].neuronList[k].weights[i] + (((random.randrange(0, 20001) / 10.0) - 1000.0) / 100)
-                else:
-                    for i in range(0, AMOUNT_NEURON_HIDDEN):
-                        bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = bird.brain.hiddenLayerList[n].neuronList[k].weights[i] + (((random.randrange(0, 20001) / 10.0) - 1000.0) / 100)
-
-        for j in range(0, AMOUNT_NEURON_OUTPUT):
-            for l in range(0, AMOUNT_NEURON_HIDDEN):
-                bird.brain.outputLayer.neuronList[j].weights[l] = bird.brain.outputLayer.neuronList[j].weights[l] + (((random.randrange(0, 20001) / 10.0) - 1000.0) / 100)
-
-    elif mode == 2:
-        for n in range(0, AMOUNT_HIDDEN):
-            for k in range(0, AMOUNT_NEURON_HIDDEN):
-                if n == 0:
-                    for i in range(0, AMOUNT_NEURON_INPUT):
-                        bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = ((random.randrange(0, 20001) / 10.0) - 1000.0)
-                else:
-                    for i in range(0, AMOUNT_NEURON_HIDDEN):
-                        bird.brain.hiddenLayerList[n].neuronList[k].weights[i] = ((random.randrange(0, 20001) / 10.0) - 1000.0)
-
-        for j in range(0, AMOUNT_NEURON_OUTPUT):
-            for l in range(0, AMOUNT_NEURON_HIDDEN):
-                bird.brain.outputLayer.neuronList[j].weights[l] = ((random.randrange(0, 20001) / 10.0) - 1000.0)
 
 def loadFromJson(file):
     with open(file, 'r') as archive:
         txt = archive.read()
         return json.loads(txt)
 
+
 def writeDictFromJson(file, dict):
     with open(file, 'w') as arquivo:
         arquivo.write(json.dumps(dict, indent=2))
+
 
 def notOnScreen(bird):
     return bird.rect[0] > SCREEN_WIDTH or bird.rect[0] < 0 or bird.rect[1] > SCREEN_HEIGHT or bird.rect[1] < 0
@@ -331,17 +246,20 @@ while True:
         if event.type == QUIT:
             pygame.quit()
 
-        # if event.type == KEYDOWN:
-        #     if event.key == K_SPACE:
-        #         bird.bump()
+        if event.type == KEYDOWN:
+            if event.key == K_SPACE:
+                bird = getBestBird(game.birds)
+                saveWeights(bird)
+                pygame.quit()
+                quit()
+                break
 
     # Executação Rede Neural
     for bird in game.birds:
         sensorList = bird.getInputs(game)
 
-        bird.brain.addNeuronInput(sensorList)
-        bird.brain.calculateOutput()
-        output = bird.brain.getOutput()
+        neural.addInputs(bird.brain, sensorList)
+        output = neural.getOutput(bird.brain)
 
         if output[0] == 0:
             bird.bump()
@@ -385,9 +303,8 @@ while True:
     game.ceiling_group.draw(game.screen)
     game.ground_group.draw(game.screen)
 
-    text = game.fontesys.render(f"Age: {game.age}, Score {bird.score}", 1, (0, 0, 0))
+    text = game.fontesys.render(f"Age: {game.age}, Score {bird.brain['score']}", 1, (0, 0, 0))
     game.screen.blit(text, (87,750))
-
 
     pygame.display.update()
 
@@ -421,4 +338,4 @@ while True:
             continue
 
     for bird in game.birds:
-        bird.score += 1
+        bird.brain["score"] += 1
